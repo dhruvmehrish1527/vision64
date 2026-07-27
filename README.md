@@ -17,15 +17,25 @@ paid chess platforms.
 
 | Area | What it does |
 |------|--------------|
-| **Analysis board** | Drag pieces, import PGN/FEN, step through history, flip, undo/redo |
+| **Analysis board** | Drag pieces, import PGN/FEN, step through history, flip, keyboard shortcuts |
 | **Engine** | Best move, top-5 candidates, eval bar, depth, principal variation, mate detection |
-| **AI Coach** | Rating-adaptive natural-language explanations of tactics, strategy, plans, and typical mistakes |
+| **AI Coach** | Rating-adaptive explanations, **streamed token-by-token**, covering tactics, strategy, plans, and typical mistakes |
 | **Move classification** | Brilliant → Blunder, each with a plain-English reason |
-| **Game review** | Accuracy score, turning points, phase-by-phase review, full coaching report |
+| **Game review** | Accuracy score, evaluation timeline, turning points, phase-by-phase breakdown |
 | **Weakness tracker** | Detects recurring patterns (missed forks, hanging pieces, king safety…) |
-| **Training plan** | Auto-generated weekly improvement plan that adapts to progress |
-| **Puzzles** | Weakness-targeted puzzles with accuracy tracking |
-| **Dashboard** | Rating, accuracy trends, streaks, most-common mistakes, interactive charts |
+| **Training plan** | Adaptive multi-week plan that re-plans as your weaknesses change |
+| **Puzzles** | Engine-verified tactics, **auto-generated from your own blunders** |
+| **AI opponent** | Play Stockfish at 4 strengths (~1320–2600), with post-game coaching |
+| **Opening explorer** | ECO codes, win rates, typical plans, common mistakes, saved repertoires |
+| **Dashboard** | Rating, accuracy, streaks, most-common mistakes, interactive charts |
+
+### A note on the design
+
+Move classification, accuracy, and weakness detection are **deterministic
+algorithms** over engine output — reproducible, unit-tested, and free to run.
+The LLM's only job is to *explain* a verdict Stockfish already justified. That
+keeps coaching accurate (the numbers come from the engine), costs bounded, and
+hallucinated evaluations out of the product.
 
 ---
 
@@ -81,17 +91,54 @@ npm run dev                   # http://localhost:5173
 
 ---
 
+> **Running without accounts:** leave `AUTH_DEV_BYPASS=true` and the app runs
+> end-to-end with no Clerk project. Without an `ANTHROPIC_API_KEY` everything
+> still works — the coach panel degrades gracefully to a clear message while the
+> engine, classification, review, puzzles, and charts keep running.
+
+---
+
 ## 🧪 Tests
 
 ```bash
 cd backend && pytest
 ```
 
+31 tests cover the deterministic core: move classification, PGN/FEN parsing,
+training-plan generation, AI-opponent helpers, and opening identification.
+
+---
+
+## 🚢 Deployment
+
+**Backend → Render** (or Railway). The included `Dockerfile` bundles Stockfish,
+so the engine works in the container with no extra setup.
+
+```bash
+# Render picks up backend/render.yaml, provisions Postgres, and injects DATABASE_URL.
+# Set these in the dashboard (never commit them):
+#   ANTHROPIC_API_KEY, CLERK_JWKS_URL, CLERK_ISSUER, CORS_ORIGINS
+```
+
+**Frontend → Vercel.** Root directory `frontend/`; `vercel.json` handles the
+SPA rewrites.
+
+```bash
+# Environment variables:
+#   VITE_API_URL=https://<your-backend>.onrender.com/api
+#   VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
+#   VITE_AUTH_DEV_BYPASS=false
+```
+
+Set `AUTH_DEV_BYPASS=false` on the backend for production so Clerk JWTs are
+actually verified.
+
 ---
 
 ## 📦 Project status
 
-This repository is built in phases (see `ARCHITECTURE.md` → *Delivery phases*).
-The current foundation ships a runnable engine + AI-coach + analysis board core;
-subsequent phases layer on game review, weakness tracking, puzzles, and the
-social dashboard.
+Built in phases (see `ARCHITECTURE.md` → *Delivery phases*). Phases 1–6 are
+complete and verified end-to-end: engine analysis, streaming AI coaching, game
+review, weakness tracking, puzzles, training plans, the AI opponent, and the
+opening explorer all run against a live Stockfish. Deployment configs are
+included and ready to apply.
