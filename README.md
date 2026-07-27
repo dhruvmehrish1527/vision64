@@ -111,27 +111,12 @@ training-plan generation, AI-opponent helpers, and opening identification.
 
 ## 🚢 Deployment
 
-**Backend → Render** (or Railway). The included `Dockerfile` bundles Stockfish,
-so the engine works in the container with no extra setup.
+**Backend → Render** (Blueprint from `render.yaml`; the `Dockerfile` bundles
+Stockfish and runs migrations on boot). **Frontend → Vercel** (root directory
+`frontend/`).
 
-```bash
-# Render picks up backend/render.yaml, provisions Postgres, and injects DATABASE_URL.
-# Set these in the dashboard (never commit them):
-#   ANTHROPIC_API_KEY, CLERK_JWKS_URL, CLERK_ISSUER, CORS_ORIGINS
-```
-
-**Frontend → Vercel.** Root directory `frontend/`; `vercel.json` handles the
-SPA rewrites.
-
-```bash
-# Environment variables:
-#   VITE_API_URL=https://<your-backend>.onrender.com/api
-#   VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
-#   VITE_AUTH_DEV_BYPASS=false
-```
-
-Set `AUTH_DEV_BYPASS=false` on the backend for production so Clerk JWTs are
-actually verified.
+Step-by-step instructions, the full environment-variable table, and a
+post-deploy checklist are in **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
 
 ---
 
