@@ -1,9 +1,16 @@
-# Render blueprint. `render deploy` (or the dashboard) picks this up.
-# A managed Postgres is provisioned and its URL injected into the web service.
+# Render blueprint — Render reads this from the REPOSITORY ROOT.
+#
+# Creates the API service and a managed Postgres, injecting DATABASE_URL
+# automatically. Everything that isn't a secret is set here, so the only manual
+# step is pasting the four `sync: false` values into the dashboard.
 services:
   - type: web
     name: vision64-api
     runtime: docker
+    plan: starter            # 0.5 CPU / 512MB, always on (no cold starts).
+                             # Change to `free` to trial it — expect ~30s cold
+                             # starts and much slower engine analysis.
+    region: oregon
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /api/health
@@ -11,21 +18,37 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: AUTH_DEV_BYPASS
-        value: "false"
+        value: "false"       # production verifies Clerk JWTs for real
       - key: STOCKFISH_PATH
-        value: /usr/games/stockfish
+        value: /usr/games/stockfish   # Debian puts it here; /usr/games isn't on PATH
+
+      # --- Engine sizing for a small instance ---
+      # One engine, one thread: on 0.5 CPU a larger pool just makes several
+      # Stockfish processes fight over the same half core and everything gets
+      # slower. Raise these together with the instance size.
+      - key: ENGINE_POOL_SIZE
+        value: "1"
+      - key: ENGINE_THREADS
+        value: "1"
+      - key: ENGINE_HASH_MB
+        value: "64"
+      - key: ENGINE_DEFAULT_DEPTH
+        value: "14"
+
       - key: DATABASE_URL
         fromDatabase:
           name: vision64-db
           property: connectionString
+
+      # --- Secrets: paste these in the Render dashboard, never in git ---
       - key: ANTHROPIC_API_KEY
-        sync: false          # set in the dashboard, never committed
+        sync: false
       - key: CLERK_JWKS_URL
         sync: false
       - key: CLERK_ISSUER
         sync: false
       - key: CORS_ORIGINS
-        sync: false          # e.g. https://vision64.vercel.app
+        sync: false          # your Vercel URL, e.g. https://vision64.vercel.app
 
 databases:
   - name: vision64-db
