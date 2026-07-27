@@ -1,0 +1,32 @@
+# Render blueprint. `render deploy` (or the dashboard) picks this up.
+# A managed Postgres is provisioned and its URL injected into the web service.
+services:
+  - type: web
+    name: vision64-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: AUTH_DEV_BYPASS
+        value: "false"
+      - key: STOCKFISH_PATH
+        value: /usr/games/stockfish
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vision64-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false          # set in the dashboard, never committed
+      - key: CLERK_JWKS_URL
+        sync: false
+      - key: CLERK_ISSUER
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false          # e.g. https://vision64.vercel.app
+
+databases:
+  - name: vision64-db
+    plan: free

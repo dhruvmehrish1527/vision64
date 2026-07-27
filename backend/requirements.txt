@@ -1,0 +1,30 @@
+# Version ranges (not hard pins) so the project resolves across Python 3.11–3.14.
+# For a fully reproducible deploy, generate a lockfile with `pip freeze`.
+
+# --- Web framework ---
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34
+python-multipart>=0.0.20
+
+# --- Data / config ---
+pydantic>=2.10,<3.0
+pydantic-settings>=2.7
+
+# --- Database ---
+SQLAlchemy>=2.0.36,<3.0
+alembic>=1.14
+psycopg[binary]>=3.2               # PostgreSQL driver
+
+# --- Chess ---
+chess>=1.11                        # python-chess: PGN/FEN, legal moves, UCI engine driver
+
+# --- AI coach ---
+anthropic>=0.42
+
+# --- Auth (Clerk JWT verification) ---
+pyjwt[crypto]>=2.10
+httpx>=0.28
+
+# --- Testing ---
+pytest>=8.3
+pytest-asyncio>=0.25
