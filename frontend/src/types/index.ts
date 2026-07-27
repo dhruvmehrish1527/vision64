@@ -87,6 +87,37 @@ export interface PuzzleMoveResult {
   new_puzzle_rating: number | null;
 }
 
+// ---- Social ----
+
+export interface AccuracyPoint {
+  game_id: number;
+  date: string;
+  accuracy: number;
+  source: string;
+}
+
+export interface PublicProfile {
+  id: number;
+  display_name: string | null;
+  rating: number;
+  puzzle_rating: number;
+  games_analyzed: number;
+  followers: number;
+  following: number;
+  is_following: boolean;
+}
+
+export interface SharedGame {
+  white: string | null;
+  black: string | null;
+  result: string | null;
+  pgn: string | null;
+  accuracy_white: number | null;
+  accuracy_black: number | null;
+  shared_by: string | null;
+  moves_san: string[];
+}
+
 // ---- Openings ----
 
 export interface Opening {

@@ -3,16 +3,38 @@
 
 import { useEffect, useState } from "react";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { api, ApiError } from "@/lib/api";
-import type { Dashboard } from "@/types";
+import type { AccuracyPoint, Dashboard } from "@/types";
+
+/** Compares the recent half of the trend with the earlier half. */
+function TrendDelta({ trend }: { trend: AccuracyPoint[] }) {
+  const mid = Math.floor(trend.length / 2);
+  const avg = (xs: AccuracyPoint[]) =>
+    xs.reduce((s, p) => s + p.accuracy, 0) / (xs.length || 1);
+  const delta = avg(trend.slice(mid)) - avg(trend.slice(0, mid));
+  const up = delta >= 0;
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+        up ? "bg-emerald-500/15 text-emerald-300" : "bg-orange-500/15 text-orange-300"
+      }`}
+      title="Recent games vs. earlier games"
+    >
+      {up ? "▲" : "▼"} {Math.abs(delta).toFixed(1)} pts
+    </span>
+  );
+}
 
 function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -26,6 +48,7 @@ function StatTile({ label, value, sub }: { label: string; value: string; sub?: s
 
 export function DashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
+  const [trend, setTrend] = useState<AccuracyPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,6 +56,7 @@ export function DashboardPage() {
       .dashboard()
       .then(setData)
       .catch((e: ApiError) => setError(e.message));
+    api.accuracyTrend().then(setTrend).catch(() => setTrend([]));
   }, []);
 
   if (error) {
@@ -68,6 +92,55 @@ export function DashboardPage() {
           value={data.puzzle_accuracy !== null ? `${data.puzzle_accuracy}%` : "—"}
         />
         <StatTile label="Streak" value={`${data.streak_days}d`} sub={`${data.training_minutes} min trained`} />
+      </div>
+
+      <div className="card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-300">
+            Accuracy over time
+          </h2>
+          {trend.length > 1 && <TrendDelta trend={trend} />}
+        </div>
+        {trend.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-500">
+            Review a few games and your accuracy trend will appear here.
+          </p>
+        ) : (
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trend.map((p, i) => ({ ...p, n: i + 1 }))}>
+                <defs>
+                  <linearGradient id="accFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22c55e" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                <XAxis dataKey="n" stroke="#94a3b8" fontSize={11} />
+                <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={11} width={32} />
+                {/* 80% is a useful "solid club play" reference line. */}
+                <ReferenceLine y={80} stroke="#ffffff25" strokeDasharray="4 4" />
+                <Tooltip
+                  contentStyle={{
+                    background: "#111827",
+                    border: "1px solid #ffffff20",
+                    borderRadius: 12,
+                  }}
+                  formatter={(v: number) => [`${v}%`, "accuracy"]}
+                  labelFormatter={(l) => `Game ${l}`}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="accuracy"
+                  stroke="#22c55e"
+                  strokeWidth={2}
+                  fill="url(#accFill)"
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       <a

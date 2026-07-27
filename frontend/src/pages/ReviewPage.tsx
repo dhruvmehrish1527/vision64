@@ -45,6 +45,8 @@ export function ReviewPage() {
   const [coachText, setCoachText] = useState<string | null>(null);
   const [coachError, setCoachError] = useState<string | null>(null);
   const [puzzlesMade, setPuzzlesMade] = useState<number | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const runReview = () => {
     setLoading(true);
@@ -85,6 +87,25 @@ export function ReviewPage() {
       })
       .catch((e: ApiError) => setCoachError(e.message))
       .finally(() => setCoachLoading(false));
+  };
+
+  const share = () => {
+    if (!review) return;
+    api
+      .shareGame(review.game.id)
+      .then((r) => {
+        const url = `${window.location.origin}${r.url_path}`;
+        setShareUrl(url);
+        // Best-effort clipboard copy; the link is shown either way.
+        navigator.clipboard?.writeText(url).then(
+          () => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          },
+          () => undefined
+        );
+      })
+      .catch(() => setShareUrl(null));
   };
 
   const genPuzzles = () => {
@@ -181,6 +202,9 @@ export function ReviewPage() {
           <AccuracyPill label="Black" value={review.accuracy_black} />
         </div>
         <div className="ml-auto flex gap-2">
+          <button onClick={share} className="btn-ghost">
+            🔗 Share
+          </button>
           <button onClick={genPuzzles} className="btn-ghost">
             🧩 Make puzzles from this game
           </button>
@@ -189,6 +213,16 @@ export function ReviewPage() {
           </button>
         </div>
       </div>
+      {shareUrl && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-2 text-sm">
+          <span className="text-brand-300">
+            {copied ? "Link copied!" : "Anyone with this link can view the game:"}
+          </span>
+          <code className="truncate rounded bg-ink-900 px-2 py-1 text-xs text-slate-300">
+            {shareUrl}
+          </code>
+        </div>
+      )}
       {puzzlesMade !== null && (
         <p className="text-sm text-brand-400">
           Created {puzzlesMade} puzzle{puzzlesMade === 1 ? "" : "s"} from your mistakes — try

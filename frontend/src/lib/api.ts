@@ -3,10 +3,13 @@
 // the only surface the UI touches.
 
 import type {
+  AccuracyPoint,
   AiGameState,
   AiLevel,
   Classification,
   Dashboard,
+  PublicProfile,
+  SharedGame,
   GameFeedback,
   ExplainMoveResponse,
   GameReview,
@@ -107,6 +110,31 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ player_move_index: playerMoveIndex, uci, time_ms: timeMs }),
     }),
+
+  accuracyTrend: () => request<AccuracyPoint[]>("/users/me/accuracy-trend"),
+
+  shareGame: (gameId: number) =>
+    request<{ share_token: string; url_path: string }>(
+      `/social/games/${gameId}/share`,
+      { method: "POST" }
+    ),
+
+  viewShared: (token: string) => request<SharedGame>(`/social/shared/${token}`),
+
+  players: () => request<PublicProfile[]>("/social/players"),
+
+  follow: async (userId: number, on: boolean) => {
+    const headers = new Headers();
+    if (tokenGetter) {
+      const token = await tokenGetter();
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+    }
+    const res = await fetch(`${BASE}/social/follow/${userId}`, {
+      method: on ? "POST" : "DELETE",
+      headers,
+    });
+    if (!res.ok) throw new ApiError(res.status, res.statusText);
+  },
 
   searchOpenings: (q: string) =>
     request<Opening[]>(`/openings?q=${encodeURIComponent(q)}&limit=40`),

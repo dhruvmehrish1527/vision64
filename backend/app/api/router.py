@@ -11,6 +11,7 @@ from app.api.routes import (
     health,
     openings,
     puzzles,
+    social,
     training,
     users,
 )
@@ -24,3 +25,4 @@ api_router.include_router(users.router)
 api_router.include_router(puzzles.router)
 api_router.include_router(training.router)
 api_router.include_router(openings.router)
+api_router.include_router(social.router)

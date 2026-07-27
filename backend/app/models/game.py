@@ -41,6 +41,12 @@ class Game(Base):
     accuracy_white: Mapped[float | None] = mapped_column(Float, nullable=True)
     accuracy_black: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    # Set when the owner shares this game publicly; the token is the only way in,
+    # so sharing is opt-in and revocable by clearing it.
+    share_token: Mapped[str | None] = mapped_column(
+        String(32), nullable=True, unique=True, index=True
+    )
+
     user: Mapped["User"] = relationship(back_populates="games")
     moves: Mapped[list["Move"]] = relationship(
         back_populates="game",

@@ -72,6 +72,41 @@ def dashboard(
     }
 
 
+@router.get("/me/accuracy-trend")
+def accuracy_trend(
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[dict]:
+    """Accuracy per reviewed game, oldest → newest, for the trend chart.
+
+    Reports the accuracy of the side the user played where we can tell (AI games
+    record the player as "You"); otherwise it falls back to White's.
+    """
+    games = (
+        db.query(Game)
+        .filter(Game.user_id == user.id, Game.accuracy_white.isnot(None))
+        .order_by(Game.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    series = []
+    for g in reversed(games):  # chronological for plotting
+        played_black = g.black == "You"
+        accuracy = g.accuracy_black if played_black else g.accuracy_white
+        if accuracy is None:
+            continue
+        series.append(
+            {
+                "game_id": g.id,
+                "date": g.created_at.isoformat(),
+                "accuracy": round(accuracy, 1),
+                "source": g.source,
+            }
+        )
+    return series
+
+
 @router.get("/me/weaknesses")
 def weaknesses(
     db: Session = Depends(get_db),

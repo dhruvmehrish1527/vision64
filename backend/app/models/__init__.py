@@ -5,6 +5,7 @@ populated — Alembic's autogenerate and `create_all` both rely on that.
 """
 
 from app.models.analysis import GameReview, Move, MoveAnalysis
+from app.models.follow import Follow
 from app.models.game import Game
 from app.models.puzzle import Puzzle, PuzzleAttempt
 from app.models.repertoire import RepertoireEntry
@@ -25,4 +26,5 @@ __all__ = [
     "PuzzleAttempt",
     "RepertoireEntry",
     "Bookmark",
+    "Follow",
 ]
